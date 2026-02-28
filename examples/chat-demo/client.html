@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BVG Chat Demo</title>
+    <style>
+        body { font-family: monospace; max-width: 800px; margin: 50px auto; padding: 20px; }
+        #messages { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
+        .message { margin: 5px 0; padding: 5px; border-radius: 5px; }
+        .sent { background: #e3f2fd; text-align: right; }
+        .received { background: #f1f8e9; }
+        .system { color: #666; font-style: italic; text-align: center; }
+        input, button { padding: 8px; margin: 2px; }
+        #status { color: #4caf50; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>📱 BVG Chat Demo</h1>
+    <div id="status">Disconnected</div>
+    
+    <div>
+        <input type="text" id="userId" placeholder="Your ID" value="user_" />
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+    </div>
+    
+    <div id="messages"></div>
+    
+    <div>
+        <input type="text" id="recipient" placeholder="Recipient ID" />
+        <input type="text" id="messageText" placeholder="Message" style="width: 300px;" />
+        <button onclick="sendMessage()">Send (chat intent)</button>
+        <button onclick="broadcast()">Broadcast</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let userId = '';
+        
+        function connect() {
+            userId = document.getElementById('userId').value || `user_${Math.random().toString(36).substr(2, 4)}`;
+            ws = new WebSocket(`ws://localhost:3000?userId=${userId}`);
+            
+            ws.onopen = () => {
+                document.getElementById('status').innerHTML = '✅ Connected as ' + userId;
+                addMessage('system', `Connected as ${userId}`);
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('status').innerHTML = '❌ Disconnected';
+                addMessage('system', 'Disconnected');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'system') {
+                    addMessage('system', data.content);
+                } else {
+                    // Это BVG-сообщение
+                    const isFromMe = data.meta.state.sender === userId;
+                    addMessage(
+                        isFromMe ? 'sent' : 'received',
+                        `${data.meta.state.sender} → ${data.meta.state.receiver}: ${data.content.text}`,
+                        data
+                    );
+                }
+            };
+        }
+        
+        function disconnect() {
+            if (ws) ws.close();
+        }
+        
+        function sendMessage() {
+            const recipient = document.getElementById('recipient').value;
+            const text = document.getElementById('messageText').value;
+            if (!recipient || !text || !ws) return;
+            
+            // Создаём BVG-сообщение
+            const msg = {
+                id: crypto.randomUUID(),
+                type: 'message',
+                content: { text },
+                meta: {
+                    intent: { primary: 'chat', confidence: 1.0 },
+                    state: {
+                        timestamp: Date.now(),
+                        sender: userId,
+                        receiver: recipient,
+                        status: 'sent'
+                    }
+                }
+            };
+            
+            ws.send(JSON.stringify(msg));
+            addMessage('sent', `You → ${recipient}: ${text}`, msg);
+            document.getElementById('messageText').value = '';
+        }
+        
+        function broadcast() {
+            const text = document.getElementById('messageText').value;
+            if (!text || !ws) return;
+            
+            const msg = {
+                id: crypto.randomUUID(),
+                type: 'message',
+                content: { text },
+                meta: {
+                    intent: { primary: 'broadcast', confidence: 1.0 },
+                    state: {
+                        timestamp: Date.now(),
+                        sender: userId,
+                        receiver: 'all',
+                        status: 'sent'
+                    }
+                }
+            };
+            
+            ws.send(JSON.stringify(msg));
+            addMessage('sent', `You → everyone: ${text}`, msg);
+            document.getElementById('messageText').value = '';
+        }
+        
+        function addMessage(type, text, raw = null) {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            
+            if (type === 'system') {
+                div.innerHTML = text;
+            } else {
+                div.innerHTML = text;
+                if (raw) {
+                    const small = document.createElement('small');
+                    small.innerHTML = `<br>🆔 ${raw.id} | intent: ${raw.meta.intent.primary}`;
+                    div.appendChild(small);
+                }
+            }
+            
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        }
+    </script>
+</body>
+</html>
