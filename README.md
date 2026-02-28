@@ -15,3 +15,11 @@ MIT — используйте как хотите.
 ## Контакты
 
 Хушвахт Раупов — [telegram]
+## 🚀 Quick start
+
+```bash
+git clone https://github.com/Khushvakht799/bridge-messenger-sdk
+cd bridge-messenger-sdk/examples/chat-demo
+npm install
+npm start
+# Open http://localhost:3000/client.html
