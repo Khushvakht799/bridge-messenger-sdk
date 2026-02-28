@@ -23,3 +23,8 @@ cd bridge-messenger-sdk/examples/chat-demo
 npm install
 npm start
 # Open http://localhost:3000/client.html
+
+## 🖥 Демо-чат в действии
+
+![BVG Chat Demo](examples/chat-demo/screenshots/chat_demo.jpg)
+
