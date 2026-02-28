@@ -28,3 +28,8 @@ npm start
 
 ![BVG Chat Demo](examples/chat-demo/screenshots/chat_demo.jpg)
 
+
+## 📢 Telegram-канал
+
+Подписывайтесь на новости и обновления BRIDGE: [t.me/bridge_tech](https://t.me/bridge_tech)
+
